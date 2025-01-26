@@ -19,8 +19,6 @@ Hệ thống đặt món ăn đơn giản được xây dựng bằng Node.js, E
 - 📊 **Báo cáo**
   - Báo cáo bán hàng theo ngày
   - Lịch sử đặt hàng của khách
-  - Thống kê doanh thu
-  - Theo dõi món ăn phổ biến
 
 ## Công nghệ sử dụng
 
@@ -40,7 +38,7 @@ Hệ thống đặt món ăn đơn giản được xây dựng bằng Node.js, E
 
 1. **Clone repository**
    ```bash
-   git clone https://github.com/yourusername/food-ordering-system.git
+   git clone https://github.com/minhhieu023/food-ordering-system.git
    cd food-ordering-system
    ```
 
