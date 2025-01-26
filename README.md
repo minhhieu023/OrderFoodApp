@@ -1,4 +1,3 @@
-```markdown
 # Food Ordering System
 
 Hệ thống đặt món ăn đơn giản được xây dựng bằng Node.js, Express và MySQL.
