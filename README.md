@@ -38,7 +38,7 @@ Hệ thống đặt món ăn đơn giản được xây dựng bằng Node.js, E
 
 1. **Clone repository**
    ```bash
-   git clone https://github.com/minhhieu023/food-ordering-system.git
+   git clone https://github.com/minhhieu023/OrderFoodApp.git
    cd food-ordering-system
    ```
 
