@@ -1,0 +1,213 @@
+<%- include('../layouts/header', {path: '/reports/customer'}) %>
+
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h4 class="mb-3">
+                <i class="bi bi-people me-2"></i>Customer Report
+            </h4>
+        </div>
+    </div>
+    
+    <!-- Search Form -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form action="/reports/customer/search" method="GET">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">
+                            <i class="bi bi-person me-1"></i>Select Customer
+                        </label>
+                        <select name="customerId" class="form-select" required>
+                            <option value="">Choose customer...</option>
+                            <% customers.forEach(customer => { %>
+                                <option value="<%= customer.id %>" 
+                                        data-name="<%= customer.name %>">
+                                    <%= customer.name %>
+                                </option>
+                            <% }); %>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">
+                            <i class="bi bi-calendar3 me-1"></i>Start Date
+                        </label>
+                        <input type="date" 
+                               class="form-control" 
+                               name="startDate" 
+                               value="<%= startDate %>" 
+                               required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">
+                            <i class="bi bi-calendar3 me-1"></i>End Date
+                        </label>
+                        <input type="date" 
+                               class="form-control" 
+                               name="endDate" 
+                               value="<%= endDate %>" 
+                               required>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search me-1"></i>Search
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Lấy tên khách hàng từ localStorage
+        const savedName = localStorage.getItem('customerName');
+        if (savedName) {
+            // Tìm option có data-name trùng với savedName
+            const select = document.querySelector('select[name="customerId"]');
+            const option = Array.from(select.options).find(opt => 
+                opt.getAttribute('data-name')?.toLowerCase() === savedName.toLowerCase()
+            );
+            
+            // Nếu tìm thấy, set selected cho option đó
+            if (option) {
+                option.selected = true;
+            }
+        }
+
+        // Set ngày mặc định
+        const today = new Date();
+        const startDateInput = document.querySelector('input[name="startDate"]');
+        const endDateInput = document.querySelector('input[name="endDate"]');
+        
+        // Mặc định start date là đầu tháng
+        const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        startDateInput.value = startDate.toISOString().split('T')[0];
+        
+        // Mặc định end date là cuối tháng
+        const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        endDateInput.value = endDate.toISOString().split('T')[0];
+    });
+    </script>
+
+    <% if (report && selectedCustomer) { %>
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h5 class="card-title mb-1">
+                            <i class="bi bi-person-circle me-2"></i>
+                            <%= selectedCustomer.name %>
+                        </h5>
+                        <small class="text-muted">
+                            <i class="bi bi-calendar-range me-1"></i>
+                            <%= new Date(startDate).toLocaleDateString('vi-VN') %> - 
+                            <%= new Date(endDate).toLocaleDateString('vi-VN') %>
+                        </small>
+                    </div>
+                    <button class="btn btn-success" onclick="copyCustomerReport()">
+                        <i class="bi bi-clipboard me-1"></i>Copy Report
+                    </button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Date</th>
+                                <th scope="col" style="min-width: 300px;">Items</th>
+                                <th scope="col" class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% let totalAmount = 0; %>
+                            <% report.forEach(order => { %>
+                                <% totalAmount += parseFloat(order.orderTotal); %>
+                                <tr>
+                                    <td>
+                                        <i class="bi bi-calendar-date me-1 text-muted"></i>
+                                        <%= new Date(order.orderDate).toLocaleDateString('vi-VN') %>
+                                    </td>
+                                    <td class="text-break"><%- order.items %></td>
+                                    <td class="text-end fw-medium">
+                                        <%= formatCurrency(order.orderTotal) %>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="2" class="text-end fw-bold">Total Amount:</td>
+                                <td class="text-end fw-bold fs-5 text-primary">
+                                    <%= formatCurrency(totalAmount) %>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+        
+        async function copyCustomerReport() {
+            const customerName = '<%= selectedCustomer.name %>';
+            const startDate = '<%= startDate %>';
+            const endDate = '<%= endDate %>';
+            const report = <%- JSON.stringify(report) %>;
+            
+            let reportText = `Báo cáo khách hàng: ${customerName}\n`;
+            reportText += `Từ ngày ${new Date(startDate).toLocaleDateString('vi-VN')} đến ${new Date(endDate).toLocaleDateString('vi-VN')}\n\n`;
+            
+            const itemSummary = new Map();
+            
+            report.forEach(order => {
+                const items = order.items.split('<br>');
+                items.forEach(item => {
+                    const match = item.match(/(\d+)x (.*?)(?: - (.*))?$/);
+                    if (match) {
+                        const [, quantity, name, note] = match;
+                        const key = note ? `${name} - ${note}` : name;
+                        const currentQuantity = itemSummary.get(key) || 0;
+                        itemSummary.set(key, currentQuantity + parseInt(quantity));
+                    }
+                });
+            });
+            
+            const sortedItems = Array.from(itemSummary.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+            sortedItems.forEach(([name, quantity]) => {
+                reportText += `${quantity} ${name}\n`;
+            });
+            
+            const totalAmount = report.reduce((sum, order) => sum + parseFloat(order.orderTotal), 0);
+            reportText += `\nTổng tiền: ${formatCurrency(totalAmount)}`;
+            
+            try {
+                await navigator.clipboard.writeText(reportText);
+                const btn = document.querySelector('.btn-success');
+                const originalContent = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check2"></i> Copied!';
+                btn.classList.add('btn-outline-success');
+                setTimeout(() => {
+                    btn.innerHTML = originalContent;
+                    btn.classList.remove('btn-outline-success');
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                alert('Failed to copy report to clipboard');
+            }
+        }
+        </script>
+    <% } %>
+</div>
+
+</body>
+</html> 

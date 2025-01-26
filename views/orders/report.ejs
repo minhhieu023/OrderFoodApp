@@ -1,0 +1,153 @@
+<%- include('../layouts/header', {path: '/orders/report'}) %>
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h4 class="mb-3">
+                <i class="bi bi-calendar-check me-2"></i>Daily Report
+            </h4>
+            <!-- Date Selection -->
+            <form action="/orders/report" method="GET" class="d-flex gap-2">
+                <input type="date" 
+                       class="form-control" 
+                       name="date" 
+                       value="<%= date %>"
+                       style="max-width: 200px;">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-1"></i>View
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Orders List -->
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="card-title mb-0">
+                    Orders for <%= new Date(date).toLocaleDateString('vi-VN', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    }) %>
+                </h5>
+                <button class="btn btn-success" onclick="copyReport()">
+                    <i class="bi bi-clipboard me-1"></i>Copy Report
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Customer</th>
+                            <th scope="col" style="min-width: 300px;">Items</th>
+                            <th scope="col" class="text-end">Total</th>
+                            <th scope="col">Time</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% let dailyTotal = 0; %>
+                        <% orders.forEach(order => { %>
+                            <% dailyTotal += parseFloat(order.total); %>
+                            <tr>
+                                <td><%= order.id %></td>
+                                <td>
+                                    <i class="bi bi-person me-1 text-muted"></i>
+                                    <%= order.userName %>
+                                </td>
+                                <td class="text-break"><%- order.items %></td>
+                                <td class="text-end fw-medium"><%= formatCurrency(order.total) %></td>
+                                <td>
+                                    <i class="bi bi-clock me-1 text-muted"></i>
+                                    <%= new Date(order.date).toLocaleTimeString('vi-VN') %>
+                                </td>
+                                <td>
+                                    <a href="/orders/detail/<%= order.id %>" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye me-1"></i>View
+                                    </a>
+                                    <a href="/orders/edit/<%= order.id %>" 
+                                       class="btn btn-sm btn-outline-secondary ms-1">
+                                        <i class="bi bi-pencil me-1"></i>Edit
+                                    </a>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="3" class="text-end fw-bold">Daily Total:</td>
+                            <td class="text-end fw-bold fs-5 text-primary">
+                                <%= formatCurrency(dailyTotal) %>
+                            </td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(amount);
+}
+
+async function copyReport() {
+    const date = '<%= date %>';
+    const orders = <%- JSON.stringify(orders) %>;
+    let reportText = `Báo cáo ngày ${date}\n\n`;
+    
+    // Gom nhóm các món giống nhau
+    const itemSummary = new Map();
+    
+    orders.forEach(order => {
+        const items = order.items.split('<br>');
+        items.forEach(item => {
+            const match = item.match(/(\d+)x (.*?)(?: - (.*))?$/);
+            if (match) {
+                const [, quantity, name, note] = match;
+                const key = note ? `${name} - ${note}` : name;
+                const currentQuantity = itemSummary.get(key) || 0;
+                itemSummary.set(key, currentQuantity + parseInt(quantity));
+            }
+        });
+    });
+    
+    // Sắp xếp và in các món
+    const sortedItems = Array.from(itemSummary.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    sortedItems.forEach(([name, quantity]) => {
+        reportText += `${quantity} ${name}\n`;
+    });
+    
+    const dailyTotal = orders.reduce((sum, order) => sum + parseFloat(order.total), 0);
+    reportText += `\nTổng tiền: ${formatCurrency(dailyTotal)}`;
+
+    try {
+        await navigator.clipboard.writeText(reportText);
+        const btn = document.querySelector('.btn-success');
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check2"></i> Copied!';
+        btn.classList.add('btn-outline-success');
+        setTimeout(() => {
+            btn.innerHTML = originalContent;
+            btn.classList.remove('btn-outline-success');
+        }, 2000);
+    } catch (err) {
+        console.error('Failed to copy text: ', err);
+        alert('Failed to copy report to clipboard');
+    }
+}
+</script>
+
+</body>
+</html> 

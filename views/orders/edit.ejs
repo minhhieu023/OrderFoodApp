@@ -1,0 +1,181 @@
+<%- include('../layouts/header', {path: '/orders'}) %>
+
+<div class="container mt-4">
+  <div class="row">
+    <!-- Menu Items -->
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="card-title mb-0">
+              <i class="bi bi-pencil-square me-2"></i>Edit Order #<%= order.id %>
+            </h4>
+            <div>
+              <button class="btn btn-outline-danger me-2" onclick="deleteOrder()">
+                <i class="bi bi-trash me-1"></i>Delete Order
+              </button>
+              <a href="/orders/report" class="btn btn-outline-secondary">
+                <i class="bi bi-x-lg me-1"></i>Cancel
+              </a>
+            </div>
+          </div>
+          <div class="row g-4" id="menuItems">
+            <% menu.forEach(item => { %>
+              <div class="col-md-6">
+                <div class="card h-100 border-0 shadow-sm">
+                  <div class="card-body">
+                    <h5 class="card-title d-flex justify-content-between align-items-center mb-3">
+                      <%= item.name %>
+                      <span class="badge bg-primary rounded-pill">
+                        <%= formatCurrency(item.price) %>
+                      </span>
+                    </h5>
+                    <div class="input-group">
+                      <input type="number" 
+                             class="form-control quantity-input" 
+                             value="1" 
+                             min="0"
+                             data-id="<%= item.id %>"
+                             data-price="<%= item.price %>"
+                             data-name="<%= item.name %>">
+                      <input type="text" 
+                             class="form-control note-input" 
+                             placeholder="Note..."
+                             data-id="<%= item.id %>">
+                      <button class="btn btn-outline-primary add-to-order" type="button"
+                              onclick="addToEditOrder(this)">
+                        <i class="bi bi-plus-lg"></i>Add
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Current Order -->
+    <div class="col-md-4">
+      <div class="card sticky-top" style="top: 1rem;">
+        <div class="card-body">
+          <h4 class="card-title mb-4">
+            <i class="bi bi-cart me-2"></i>Edit Order
+          </h4>
+          <div class="mb-3">
+            <label class="form-label">
+              <i class="bi bi-person me-1"></i>Customer Name
+            </label>
+            <input type="text" 
+                   class="form-control" 
+                   id="customerName" 
+                   required
+                   value="<%= order.userName %>"
+                   placeholder="Enter customer name...">
+          </div>
+          <div id="orderItems" class="mb-3">
+            <!-- Order items will be updated dynamically -->
+          </div>
+          <hr>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Total:</h5>
+            <h5 id="orderTotal" class="text-primary mb-0">
+              <%= formatCurrency(order.total) %>
+            </h5>
+          </div>
+          <button class="btn btn-primary w-100" onclick="updateOrder()">
+            <i class="bi bi-check2-circle me-1"></i>Update Order
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Load dependencies first -->
+<script src="/js/edit-order.js"></script>
+
+<script>
+// Initialize variables
+const orderId = <%= order.id %>;
+const originalOrder = <%- JSON.stringify(order) %>;
+
+// Initialize edit order with existing items
+let editOrder = {
+  items: originalOrder.items.map(item => ({
+    id: item.menu_id,
+    name: item.itemName,
+    price: parseFloat(item.itemPrice),
+    quantity: item.quantity,
+    note: item.note
+  })),
+  total: originalOrder.total
+};
+
+// Delete order function
+async function deleteOrder() {
+  if (!confirm('Are you sure you want to delete this order?')) return;
+  
+  try {
+    const response = await fetch(`/orders/${orderId}`, {
+      method: 'DELETE'
+    });
+    
+    if (response.ok) {
+      window.location.href = '/orders/report';
+    } else {
+      alert('Failed to delete order');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Failed to delete order');
+  }
+}
+
+// Update order function
+async function updateOrder() {
+  if (editOrder.items.length === 0) {
+    alert('Please add at least one item');
+    return;
+  }
+
+  const customerName = document.getElementById('customerName').value;
+  if (!customerName) {
+    alert('Please enter customer name');
+    return;
+  }
+
+  try {
+    const response = await fetch(`/orders/${orderId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        customerName,
+        items: editOrder.items,
+        total: editOrder.total
+      })
+    });
+
+    if (response.ok) {
+      window.location.href = '/orders/report';
+    } else {
+      alert('Failed to update order');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Failed to update order');
+  }
+}
+
+// Initialize order display after everything is loaded
+document.addEventListener('DOMContentLoaded', function() {
+  updateOrderDisplay();
+});
+</script>
+
+<script src="/js/edit-order.js"></script>
+</body>
+</html> 

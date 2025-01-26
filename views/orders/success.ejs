@@ -1,0 +1,84 @@
+<%- include('../layouts/header', {path: '/orders'}) %>
+
+<div class="container mt-4">
+  <div class="card">
+    <div class="card-body text-center py-5">
+      <div class="mb-4">
+        <svg width="120" height="120" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="54" fill="#4CAF50" fill-opacity="0.1" stroke="#4CAF50" stroke-width="2"/>
+          <path d="M40 60L55 75L85 45" stroke="#4CAF50" stroke-width="3" fill="none"/>
+        </svg>
+      </div>
+      <h2 class="mb-2">Order Placed Successfully!</h2>
+      <p class="text-muted mb-5">Order #<%= order.id %> has been created</p>
+      
+      <div class="row justify-content-center">
+        <div class="col-md-8">
+          <div class="card bg-light border-0">
+            <div class="card-body">
+              <div class="d-flex align-items-center mb-4">
+                <div class="me-3">
+                  <i class="bi bi-person-circle fs-1 text-muted"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <h5 class="mb-1"><%= order.customerName %></h5>
+                  <div class="text-muted">
+                    <i class="bi bi-clock me-1"></i><%= order.formattedDate %>
+                  </div>
+                </div>
+                <div class="text-end">
+                  <h4 class="text-primary mb-0"><%= formatCurrency(order.total) %></h4>
+                </div>
+              </div>
+
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th class="text-center">Quantity</th>
+                    <th class="text-end">Price</th>
+                    <th class="text-end">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% order.items.forEach(item => { %>
+                    <tr>
+                      <td class="align-middle">
+                        <div><%= item.name %></div>
+                        <% if (item.note) { %>
+                          <small class="text-muted">
+                            <i class="bi bi-pencil-square me-1"></i><%= item.note %>
+                          </small>
+                        <% } %>
+                      </td>
+                      <td class="text-center align-middle">
+                        <span class="badge bg-secondary rounded-pill px-3"><%= item.quantity %></span>
+                      </td>
+                      <td class="text-end align-middle"><%= formatCurrency(item.price) %></td>
+                      <td class="text-end align-middle"><%= formatCurrency(item.price * item.quantity) %></td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="3" class="text-end fw-bold">Total:</td>
+                    <td class="text-end fw-bold"><%= formatCurrency(order.total) %></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <a href="/orders" class="btn btn-primary btn-lg me-2">
+              <i class="bi bi-plus-lg me-2"></i>New Order
+            </a>
+            <a href="/orders/report" class="btn btn-outline-primary btn-lg">
+              <i class="bi bi-list-ul me-2"></i>View All Orders
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

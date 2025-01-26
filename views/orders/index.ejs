@@ -1,0 +1,218 @@
+<%- include('../layouts/header', {path: '/orders'}) %>
+
+<div class="container mt-4">
+    <div class="row">
+        <!-- Menu Items -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="card-title mb-0">
+                            <i class="bi bi-menu-button-wide me-2"></i>Menu Items
+                        </h4>
+                        <div class="dropdown">
+                            <button class="btn btn-outline-primary dropdown-toggle" 
+                                    type="button" 
+                                    data-bs-toggle="dropdown" 
+                                    aria-expanded="false">
+                                <i class="bi bi-sort-down me-1"></i>
+                                <span id="currentSort">Sort by: Price High-Low</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="#" data-sort="price-desc">
+                                        <i class="bi bi-sort-numeric-down-alt me-2"></i>Price High-Low
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#" data-sort="price-asc">
+                                        <i class="bi bi-sort-numeric-down me-2"></i>Price Low-High
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#" data-sort="name">
+                                        <i class="bi bi-sort-alpha-down me-2"></i>Name
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#" data-sort="newest">
+                                        <i class="bi bi-clock-history me-2"></i>Newest
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="row g-4" id="menuItems">
+                        <% menu.forEach(item => { %>
+                            <div class="col-md-6">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <h5 class="card-title d-flex justify-content-between align-items-center mb-3">
+                                            <%= item.name %>
+                                            <span class="badge bg-primary rounded-pill">
+                                                <%= formatCurrency(item.price) %>
+                                            </span>
+                                        </h5>
+                                        <div class="input-group">
+                                            <input type="number" 
+                                                   class="form-control quantity-input" 
+                                                   value="1" 
+                                                   min="0"
+                                                   data-id="<%= item.id %>"
+                                                   data-price="<%= item.price %>"
+                                                   data-name="<%= item.name %>">
+                                            <input type="text" 
+                                                   class="form-control note-input" 
+                                                   placeholder="Note..."
+                                                   data-id="<%= item.id %>">
+                                            <button class="btn btn-outline-primary add-to-order" type="button">
+                                                <i class="bi bi-plus-lg"></i>Add
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Order -->
+        <div class="col-md-4">
+            <div class="card sticky-top" style="top: 1rem;">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">
+                        <i class="bi bi-cart me-2"></i>Current Order
+                    </h4>
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-person me-1"></i>Customer Name
+                        </label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="customerName" 
+                               required
+                               placeholder="Enter customer name...">
+                    </div>
+                    <div id="orderItems" class="mb-3">
+                        <!-- Order items will be added here dynamically -->
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Total:</h5>
+                        <h5 id="orderTotal" class="text-primary mb-0">
+                            <%= formatCurrency(0) %>
+                        </h5>
+                    </div>
+                    <button class="btn btn-primary w-100" id="placeOrder">
+                        <i class="bi bi-check2-circle me-1"></i>Place Order
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Cập nhật template cho orderItems
+function updateOrderDisplay() {
+    const orderItems = document.getElementById('orderItems');
+    orderItems.innerHTML = '';
+    let total = 0;
+
+    currentOrder.items.forEach(item => {
+        const itemTotal = item.price * item.quantity;
+        total += itemTotal;
+
+        orderItems.innerHTML += `
+            <div class="card mb-2 border-0 bg-light">
+                <div class="card-body p-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">${item.name}</h6>
+                            <div class="text-muted small">
+                                ${item.quantity} x ${formatCurrency(item.price)}
+                                ${item.note ? `<br><i class="bi bi-pencil-square me-1"></i>${item.note}` : ''}
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="mb-1">${formatCurrency(itemTotal)}</div>
+                            <button class="btn btn-sm btn-outline-danger" onclick="removeItem('${item.id}')">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    currentOrder.total = total;
+    document.getElementById('orderTotal').textContent = formatCurrency(total);
+}
+</script>
+
+<script src="/js/order.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const menuItems = document.getElementById('menuItems');
+    const sortLinks = document.querySelectorAll('.dropdown-item[data-sort]');
+    const currentSortText = document.getElementById('currentSort');
+    let items = Array.from(menuItems.children);
+
+    // Sort functions
+    const sortFunctions = {
+        'price-asc': (a, b) => {
+            const priceA = parseFloat(a.querySelector('[data-price]').dataset.price);
+            const priceB = parseFloat(b.querySelector('[data-price]').dataset.price);
+            return priceA - priceB;
+        },
+        'price-desc': (a, b) => {
+            const priceA = parseFloat(a.querySelector('[data-price]').dataset.price);
+            const priceB = parseFloat(b.querySelector('[data-price]').dataset.price);
+            return priceB - priceA;
+        },
+        name: (a, b) => {
+            const nameA = a.querySelector('[data-name]').dataset.name;
+            const nameB = b.querySelector('[data-name]').dataset.name;
+            return nameA.localeCompare(nameB);
+        },
+        newest: (a, b) => {
+            return items.indexOf(b) - items.indexOf(a);
+        }
+    };
+
+    const sortLabels = {
+        'price-desc': 'Sort by: Price High-Low',
+        'price-asc': 'Sort by: Price Low-High',
+        'name': 'Sort by: Name',
+        'newest': 'Sort by: Newest'
+    };
+
+    // Sort handler
+    function handleSort(sortType) {
+        items.sort(sortFunctions[sortType]);
+        items.forEach(item => menuItems.appendChild(item));
+        currentSortText.textContent = sortLabels[sortType];
+    }
+
+    // Click handler
+    sortLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Update active state
+            sortLinks.forEach(l => l.classList.remove('active'));
+            this.classList.add('active');
+
+            // Sort items
+            handleSort(this.dataset.sort);
+        });
+    });
+
+    // Default sort by price (high to low)
+    handleSort('price-desc');
+});
+</script>
+</body>
+</html> 

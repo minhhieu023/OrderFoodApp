@@ -1,0 +1,13 @@
+<%
+const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(amount);
+};
+%>
+
+<!-- Export function để các view khác có thể sử dụng -->
+<% locals.formatCurrency = formatCurrency %> 
