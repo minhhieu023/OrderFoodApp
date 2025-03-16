@@ -98,6 +98,36 @@ food-ordering-system/
   npm run prod
   ```
 
+## Running the Application
+
+### Development
+```bash
+npm start
+```
+
+### Production
+```bash
+# Using Node directly
+npm run prod
+
+# Using PM2
+pm2 start ecosystem.config.js --env production
+```
+
+### Environment Variables
+Create `.env.production` file with the following variables:
+```
+PORT=3000
+NODE_ENV=production
+DB_HOST=localhost
+DB_USER=production_user
+DB_PASSWORD=your_prod_password
+DB_NAME=order_food_prod
+JWT_SECRET=your_production_jwt_secret
+JWT_EXPIRES_IN=7d
+TZ=Asia/Ho_Chi_Minh
+```
+
 ## API Endpoints
 
 ### Orders

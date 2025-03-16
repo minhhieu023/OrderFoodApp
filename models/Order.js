@@ -1,40 +1,17 @@
 const pool = require('../config/database');
 
 class Order {
-  static async findOrCreateUser(name) {
-    // Tìm user với tên đã cho
-    const [existingUsers] = await pool.query(
-      'SELECT id FROM users WHERE LOWER(name) = LOWER(?)',
-      [name]
-    );
-    
-    // Nếu tìm thấy user, trả về id của user đó
-    if (existingUsers.length > 0) {
-      return existingUsers[0].id;
-    }
-
-    // Nếu không tìm thấy, tạo user mới
-    const [result] = await pool.query(
-      'INSERT INTO users (name) VALUES (?)',
-      [name]
-    );
-    return result.insertId;
-  }
-
-  static async create(customerName, items, total) {
+  static async create(userId, items, total) {
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
 
-      // Tìm hoặc tạo user
-      const userId = await Order.findOrCreateUser(customerName);
-
-      // Tạo order
-      const [orderResult] = await connection.query(
+      // Create order
+      const [result] = await connection.query(
         'INSERT INTO orders (user_id, total) VALUES (?, ?)',
         [userId, total]
       );
-      const orderId = orderResult.insertId;
+      const orderId = result.insertId;
 
       // Thêm các món ăn vào order
       for (const item of items) {
@@ -56,7 +33,7 @@ class Order {
 
   static async getDailyReport(date) {
     const [rows] = await pool.query(
-      `SELECT o.*, u.name as userName, 
+      `SELECT o.*, o.user_id, u.name as userName, 
        GROUP_CONCAT(
          CONCAT(
            oi.quantity,
@@ -143,43 +120,37 @@ class Order {
   }
 
   static async getOrderById(orderId) {
-    const [order] = await pool.query(
-      `SELECT o.*, u.name as customerName, DATE_FORMAT(o.date, '%H:%i:%S %d/%m/%Y') as formattedDate
-      FROM orders o 
-      JOIN users u ON o.user_id = u.id 
-      WHERE o.id = ?`,
+    const [rows] = await pool.query(
+      `SELECT o.*, u.name as userName,
+        JSON_ARRAYAGG(
+          JSON_OBJECT(
+            'menu_id', oi.menu_id,
+            'itemName', m.name,
+            'itemPrice', oi.price,
+            'quantity', oi.quantity,
+            'note', oi.note
+          )
+        ) as items
+        FROM orders o
+        JOIN users u ON o.user_id = u.id
+        JOIN order_items oi ON o.id = oi.order_id
+        JOIN menu m ON oi.menu_id = m.id
+        WHERE o.id = ?
+        GROUP BY o.id`,
       [orderId]
     );
-    
-    if (order.length === 0) return null;
-
-    const [items] = await pool.query(
-      `SELECT oi.*, m.name as name, m.price as price 
-      FROM order_items oi
-      JOIN menu m ON oi.menu_id = m.id
-      WHERE oi.order_id = ?
-      ORDER BY m.name ASC`,
-      [orderId]
-    );
-
-    return {
-      ...order[0],
-      items
-    };
+    return rows[0];
   }
 
-  static async updateOrder(orderId, customerName, items, total) {
+  static async updateOrder(orderId, items, total) {
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
 
-      // Update or create user
-      const userId = await Order.findOrCreateUser(customerName);
-
       // Update order
       await connection.query(
-        'UPDATE orders SET user_id = ?, total = ? WHERE id = ?',
-        [userId, total, orderId]
+        'UPDATE orders SET total = ? WHERE id = ?',
+        [total, orderId]
       );
 
       // Delete old items

@@ -5,9 +5,31 @@ let currentOrder = {
 
 // Load customer name from localStorage when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    const savedName = localStorage.getItem('customerName');
-    if (savedName) {
-        document.getElementById('customerName').value = savedName;
+    // Request notification permission
+    if ("Notification" in window) {
+        Notification.requestPermission();
+    }
+
+    // Toggle order status
+    const toggleBtn = document.getElementById('toggleOrderBtn');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', async function() {
+            try {
+                const response = await fetch('/orders/toggle-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    location.reload();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
     }
 });
 
@@ -87,17 +109,7 @@ function removeItem(id, note) {
     updateOrderDisplay();
 }
 
-// Thêm sự kiện input để lưu tên khi người dùng nhập
-document.getElementById('customerName').addEventListener('input', function(e) {
-    localStorage.setItem('customerName', e.target.value);
-});
-
 document.getElementById('placeOrder').addEventListener('click', async function() {
-    const customerName = document.getElementById('customerName').value.trim();
-    if (!customerName) {
-        alert('Please enter customer name');
-        return;
-    }
     if (currentOrder.items.length === 0) {
         alert('Please add items to order');
         return;
@@ -110,11 +122,16 @@ document.getElementById('placeOrder').addEventListener('click', async function()
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                customerName,
                 items: currentOrder.items,
                 total: currentOrder.total
             })
         });
+
+        if (response.status === 403) {
+            const error = await response.json();
+            alert(error.error || 'Order system is currently closed');
+            return;
+        }
 
         const result = await response.json();
         
@@ -136,4 +153,133 @@ function formatCurrency(amount) {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
     }).format(amount);
+}
+
+// Schedule notification
+async function scheduleOrderNotification() {
+    // Get notification time from settings
+    let notificationTime;
+    let notificationContent;
+    try {
+        const [timeRes, contentRes] = await Promise.all([
+            fetch('/users/settings/notification-time'),
+            fetch('/users/settings/notification-content')
+        ]);
+        const timeData = await timeRes.json();
+        const contentData = await contentRes.json();
+        
+        if (timeData.success) {
+            notificationTime = timeData.time;
+        } else {
+            notificationTime = '11:00'; // fallback
+        }
+        
+        if (contentData.success) {
+            notificationContent = contentData.content;
+        } else {
+            notificationContent = {
+                title: 'Food Order Reminder',
+                body: "It's time to order your lunch!"
+            };
+        }
+    } catch (error) {
+        console.error('Error getting notification settings:', error);
+        notificationTime = '11:00';
+        notificationContent = {
+            title: 'Food Order Reminder',
+            body: "It's time to order your lunch!"
+        };
+    }
+
+    const now = new Date();
+    const [hours, minutes] = notificationTime.split(':');
+    let scheduledTime = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        parseInt(hours),
+        parseInt(minutes),
+        0
+    );
+
+    // If it's past notification time, schedule for next day
+    if (now > scheduledTime) {
+        scheduledTime.setDate(scheduledTime.getDate() + 1);
+    }
+
+    const timeUntilNotification = Math.max(0, scheduledTime - now);
+    setTimeout(function() {
+        if (Notification.permission === "granted") {
+            new Notification(
+                notificationContent.title,
+                {
+                    body: notificationContent.body,
+                    icon: "/images/food-icon.png"
+                }
+            );
+        }
+        scheduleOrderNotification();
+    }, timeUntilNotification);
+}
+
+// Start scheduling
+if ("Notification" in window) {
+    scheduleOrderNotification();
+}
+
+async function deleteOrder(orderId) {
+    if (confirm('Are you sure you want to delete this order?')) {
+        try {
+            const response = await fetch(`/orders/${orderId}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                alert(error.error || 'Failed to delete order');
+                return;
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                location.reload();
+            } else {
+                alert('Failed to delete order');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to delete order');
+        }
+    }
+}
+
+async function updateOrder(orderId) {
+    try {
+        const response = await fetch(`/orders/${orderId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                items: currentOrder.items,
+                total: currentOrder.total
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert(error.error || 'Failed to update order');
+            return;
+        }
+
+        const result = await response.json();
+        if (result.success) {
+            location.reload();
+        } else {
+            alert('Failed to update order');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to update order');
+    }
 } 

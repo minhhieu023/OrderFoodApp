@@ -1,0 +1,158 @@
+<%- include('../layouts/header', {path: '/invoices'}) %>
+
+<div class="container mt-4">
+  <div class="row mb-4">
+    <div class="col">
+      <a href="<%= req.query.from === 'admin' ? '/invoices/admin/list' : '/invoices' %>" class="btn btn-outline-primary mb-3">
+        <i class="bi bi-arrow-left me-1"></i>Back to Invoices
+      </a>
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="card-title mb-0">
+              <i class="bi bi-receipt me-2"></i>Invoice Detail
+            </h4>
+            <% if (invoice.status === 'new') { %>
+              <span class="badge bg-primary fs-6">Mới</span>
+            <% } else if (invoice.status === 'transferred') { %>
+              <span class="badge bg-info fs-6">Đã chuyển khoản</span>
+            <% } else if (invoice.status === 'confirmed') { %>
+              <span class="badge bg-success fs-6">Đã xác nhận chuyển khoản</span>
+            <% } else if (invoice.status === 'cancelled') { %>
+              <span class="badge bg-danger fs-6">Đã huỷ</span>
+            <% } else if (invoice.status === 'not_received') { %>
+              <span class="badge bg-warning fs-6">Chưa thấy thông tin chuyển khoản</span>
+            <% } else { %>
+              <span class="badge bg-secondary fs-6">Chưa rõ</span>
+            <% } %>
+          </div>
+
+          <!-- Invoice Info -->
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <h5 class="mb-3">Invoice Information</h5>
+              <table class="table table-sm">
+                <tr>
+                  <td class="fw-medium">Invoice ID:</td>
+                  <td><%= invoice.id %></td>
+                </tr>
+                <tr>
+                  <td class="fw-medium">Period:</td>
+                  <td>
+                    <%= new Date(invoice.year, invoice.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' }) %>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="fw-medium">Created Date:</td>
+                  <td><%= new Date(invoice.created_at).toLocaleDateString('vi-VN') %></td>
+                </tr>
+                <% if (invoice.paid_at) { %>
+                  <tr>
+                    <td class="fw-medium">Paid Date:</td>
+                    <td><%= new Date(invoice.paid_at).toLocaleDateString('vi-VN') %></td>
+                  </tr>
+                <% } %>
+              </table>
+            </div>
+            <div class="col-md-6">
+              <h5 class="mb-3">Customer Information</h5>
+              <table class="table table-sm">
+                <tr>
+                  <td class="fw-medium">Name:</td>
+                  <td><%= invoice.user_name %></td>
+                </tr>
+                <tr>
+                  <td class="fw-medium">Email:</td>
+                  <td><%= invoice.email %></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <!-- Order Details -->
+          <h5 class="mb-3">Order Details</h5>
+          <div class="table-responsive mb-4">
+            <table class="table table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Order ID</th>
+                  <th>Date</th>
+                  <th>Items</th>
+                  <th class="text-end">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% invoice.orders.forEach(order => { %>
+                  <tr>
+                    <td>#<%= order.order_id %></td>
+                    <td><%= new Date(order.order_date).toLocaleDateString('vi-VN') %></td>
+                    <td><%= order.items %></td>
+                    <td class="text-end"><%= formatCurrency(order.amount) %></td>
+                  </tr>
+                <% }); %>
+              </tbody>
+              <tfoot class="table-light">
+                <tr>
+                  <td colspan="3" class="text-end fw-bold">Total Amount:</td>
+                  <td class="text-end fw-bold fs-5 text-primary">
+                    <%= formatCurrency(invoice.total_amount) %>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Payment QR Code -->
+          <% if (['new', 'not_received'].includes(invoice.status)) { %>
+            <div class="row justify-content-center">
+              <div class="col-md-6 text-center">
+                <h5 class="mb-3">Payment QR Code</h5>
+                <div class="card mb-3">
+                  <div class="card-body">
+                    <img src="<%= qrCode %>" alt="Payment QR Code" class="img-fluid mb-3" style="max-width: 300px;">
+                    <div class="text-muted small">
+                      <p class="mb-1">Bank: BIDV</p>
+                      <p class="mb-1">Account: 3142336054</p>
+                      <p class="mb-1">Account Name: NGUYEN HOANG GIA</p>
+                      <p class="mb-1">Content: <%= invoice.id %></p>
+                      <p class="mb-0">Amount: <%= formatCurrency(invoice.total_amount) %></p>
+                    </div>
+                    <button onclick="markAsTransferred('<%= invoice.id %>')" class="btn btn-success mt-3">
+                      <i class="bi bi-check-circle me-1"></i>Tôi đã chuyển khoản
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../layouts/footer') %>
+
+<script>
+  async function markAsTransferred(invoiceId) {
+    if (!confirm('Xác nhận bạn đã chuyển khoản?')) return;
+    
+    try {
+      const response = await fetch(`/invoices/${invoiceId}/mark-transferred`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        location.reload();
+      } else {
+        alert('Có lỗi xảy ra. Vui lòng thử lại.');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Có lỗi xảy ra. Vui lòng thử lại.');
+    }
+  }
+</script> 

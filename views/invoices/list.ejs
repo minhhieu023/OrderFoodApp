@@ -1,0 +1,66 @@
+<%- include('../layouts/header', {path: '/invoices'}) %>
+
+<div class="container mt-4">
+  <div class="row mb-4">
+    <div class="col">
+      <h4 class="mb-3">
+        <i class="bi bi-receipt me-2"></i>My Invoices
+      </h4>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead class="table-light">
+            <tr>
+              <th>Invoice ID</th>
+              <th>Period</th>
+              <th class="text-end">Total Orders</th>
+              <th class="text-end">Amount</th>
+              <th>Status</th>
+              <th>Created At</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% invoices.forEach(invoice => { %>
+              <tr>
+                <td><%= invoice.id %></td>
+                <td>
+                  <%= new Date(invoice.year, invoice.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' }) %>
+                </td>
+                <td class="text-end"><%= invoice.order_count %></td>
+                <td class="text-end fw-medium"><%= formatCurrency(invoice.total_amount) %></td>
+                <td>
+                  <% if (invoice.status === 'new') { %>
+                    <span class="badge bg-primary">Mới</span>
+                  <% } else if (invoice.status === 'transferred') { %>
+                    <span class="badge bg-info">Đã chuyển khoản</span>
+                  <% } else if (invoice.status === 'confirmed') { %>
+                    <span class="badge bg-success">Đã xác nhận chuyển khoản</span>
+                  <% } else if (invoice.status === 'cancelled') { %>
+                    <span class="badge bg-danger">Đã huỷ</span>
+                  <% } else if (invoice.status === 'not_received') { %>
+                    <span class="badge bg-warning">Chưa thấy thông tin chuyển khoản</span>
+                  <% } else { %>
+                    <span class="badge bg-secondary">Chưa rõ</span>
+                  <% } %>
+                </td>
+                <td><%= new Date(invoice.created_at).toLocaleDateString('vi-VN') %></td>
+                <td>
+                  <a href="/invoices/<%= invoice.id %>" class="btn btn-sm btn-primary">
+                    <i class="bi bi-eye me-1"></i>View
+                  </a>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../layouts/footer') %> 

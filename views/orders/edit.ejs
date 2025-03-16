@@ -63,16 +63,8 @@
           <h4 class="card-title mb-4">
             <i class="bi bi-cart me-2"></i>Edit Order
           </h4>
-          <div class="mb-3">
-            <label class="form-label">
-              <i class="bi bi-person me-1"></i>Customer Name
-            </label>
-            <input type="text" 
-                   class="form-control" 
-                   id="customerName" 
-                   required
-                   value="<%= order.userName %>"
-                   placeholder="Enter customer name...">
+          <div class="mb-3 text-muted">
+            <i class="bi bi-person me-1"></i>Order by: <%= order.userName %>
           </div>
           <div id="orderItems" class="mb-3">
             <!-- Order items will be updated dynamically -->
@@ -94,6 +86,7 @@
 </div>
 
 <!-- Load dependencies first -->
+<script src="/js/utils.js"></script>
 <script src="/js/edit-order.js"></script>
 
 <script>
@@ -122,10 +115,17 @@ async function deleteOrder() {
       method: 'DELETE'
     });
     
-    if (response.ok) {
+    if (response.status === 403) {
+      const error = await response.json();
+      alert(error.error || 'Permission denied');
+      return;
+    }
+
+    const result = await response.json();
+    if (result.success) {
       window.location.href = '/orders/report';
     } else {
-      alert('Failed to delete order');
+      alert(result.error || 'Failed to delete order');
     }
   } catch (error) {
     console.error('Error:', error);
@@ -140,12 +140,6 @@ async function updateOrder() {
     return;
   }
 
-  const customerName = document.getElementById('customerName').value;
-  if (!customerName) {
-    alert('Please enter customer name');
-    return;
-  }
-
   try {
     const response = await fetch(`/orders/${orderId}`, {
       method: 'PUT',
@@ -153,16 +147,22 @@ async function updateOrder() {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        customerName,
         items: editOrder.items,
         total: editOrder.total
       })
     });
 
-    if (response.ok) {
+    if (response.status === 403) {
+      const error = await response.json();
+      alert(error.error || 'Permission denied');
+      return;
+    }
+
+    const result = await response.json();
+    if (result.success) {
       window.location.href = '/orders/report';
     } else {
-      alert('Failed to update order');
+      alert(result.error || 'Failed to update order');
     }
   } catch (error) {
     console.error('Error:', error);
@@ -170,10 +170,48 @@ async function updateOrder() {
   }
 }
 
+// Update order display function
+function updateOrderDisplay() {
+  const orderItems = document.getElementById('orderItems');
+  orderItems.innerHTML = '';
+  let total = 0;
+
+  editOrder.items.forEach(item => {
+    const itemTotal = item.price * item.quantity;
+    total += itemTotal;
+
+    orderItems.innerHTML += `
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div>
+          <h6 class="mb-0">${item.name}</h6>
+          <small class="text-muted">${item.quantity} x ${formatCurrency(item.price)}</small>
+          ${item.note ? `<br><small class="text-muted fst-italic">Note: ${item.note}</small>` : ''}
+        </div>
+        <div class="text-end">
+          <div class="mb-1">${formatCurrency(itemTotal)}</div>
+          <button class="btn btn-sm btn-danger" onclick="removeItem(${item.id}, '${item.note || ''}')">×</button>
+        </div>
+      </div>
+    `;
+  });
+
+  editOrder.total = total;
+  document.getElementById('orderTotal').textContent = formatCurrency(total);
+}
+
 // Initialize order display after everything is loaded
 document.addEventListener('DOMContentLoaded', function() {
   updateOrderDisplay();
 });
+
+function formatCurrency(amount) {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(amount);
+}
 </script>
 
 <script src="/js/edit-order.js"></script>

@@ -9,8 +9,13 @@
           <path d="M40 60L55 75L85 45" stroke="#4CAF50" stroke-width="3" fill="none"/>
         </svg>
       </div>
-      <h2 class="mb-2">Order Placed Successfully!</h2>
-      <p class="text-muted mb-5">Order #<%= order.id %> has been created</p>
+      <div class="alert alert-success mb-4" role="alert">
+        <h4 class="alert-heading mb-2">Order Placed Successfully!</h4>
+        <p class="mb-0">
+          Thank you <%= user.name %>, your order has been placed.
+          Order ID: #<%= order.id %>
+        </p>
+      </div>
       
       <div class="row justify-content-center">
         <div class="col-md-8">

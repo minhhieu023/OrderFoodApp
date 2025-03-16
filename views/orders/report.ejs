@@ -64,15 +64,15 @@
                                     <i class="bi bi-clock me-1 text-muted"></i>
                                     <%= new Date(order.date).toLocaleTimeString('vi-VN') %>
                                 </td>
-                                <td>
-                                    <a href="/orders/detail/<%= order.id %>" 
-                                       class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-eye me-1"></i>View
-                                    </a>
-                                    <a href="/orders/edit/<%= order.id %>" 
-                                       class="btn btn-sm btn-outline-secondary ms-1">
-                                        <i class="bi bi-pencil me-1"></i>Edit
-                                    </a>
+                                <td class="text-end">
+                                    <% if (user.role === 'admin' || order.user_id === user.id) { %>
+                                        <a href="/orders/edit/<%= order.id %>" class="btn btn-sm btn-warning">
+                                            <i class="bi bi-pencil me-1"></i>Edit
+                                        </a>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteOrder(<%= order.id %>)">
+                                            <i class="bi bi-trash me-1"></i>Delete
+                                        </button>
+                                    <% } %>
                                 </td>
                             </tr>
                         <% }); %>

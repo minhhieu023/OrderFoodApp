@@ -1,0 +1,286 @@
+<%- include('../../layouts/header', {path: '/invoices/admin'}) %>
+
+<div class="container mt-4">
+  <div class="row mb-4">
+    <div class="col">
+      <h4 class="mb-3">
+        <i class="bi bi-receipt me-2"></i>Invoice Management
+      </h4>
+    </div>
+    <div class="col">
+      <select id="periodFilter" class="form-select" onchange="filterByPeriod(this.value)">
+        <% 
+          const periods = [...new Set(invoices.map(inv => `${inv.year}-${inv.month}`))].sort().reverse();
+          const defaultPeriod = periods[0];
+        %>
+        <% periods.forEach(period => { 
+          const [year, month] = period.split('-');
+          const periodLabel = new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+        %>
+          <option value="<%= period %>" <%= period === defaultPeriod ? 'selected' : '' %>>
+            <%= periodLabel %>
+          </option>
+        <% }); %>
+      </select>
+    </div>
+    <div class="col text-end">
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createInvoiceModal">
+        <i class="bi bi-plus-circle me-1"></i>Create Invoice
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead class="table-light">
+            <tr>
+              <th>Invoice ID</th>
+              <th>Customer</th>
+              <th>Period</th>
+              <th class="text-end">Amount</th>
+              <th>Status</th>
+              <th>Created At</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="invoiceTableBody">
+            <% invoices.forEach(invoice => { %>
+              <tr data-period="<%= `${invoice.year}-${invoice.month}` %>">
+                <td><%= invoice.id %></td>
+                <td><%= invoice.user_name %></td>
+                <td>
+                  <%= new Date(invoice.year, invoice.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' }) %>
+                </td>
+                <td class="text-end fw-medium"><%= formatCurrency(invoice.total_amount) %></td>
+                <td>
+                  <select class="form-select form-select-sm status-select" 
+                          data-invoice-id="<%= invoice.id %>"
+                          style="width: 200px;">
+                    <option value="new" <%= invoice.status === 'new' ? 'selected' : '' %>>Mới</option>
+                    <option value="transferred" <%= invoice.status === 'transferred' ? 'selected' : '' %>>Đã chuyển khoản</option>
+                    <option value="confirmed" <%= invoice.status === 'confirmed' ? 'selected' : '' %>>Đã xác nhận chuyển khoản</option>
+                    <option value="cancelled" <%= invoice.status === 'cancelled' ? 'selected' : '' %>>Đã huỷ</option>
+                    <option value="not_received" <%= invoice.status === 'not_received' ? 'selected' : '' %>>Chưa thấy thông tin chuyển khoản</option>
+                  </select>
+                </td>
+                <td><%= new Date(invoice.created_at).toLocaleDateString('vi-VN') %></td>
+                <td>
+                  <a href="/invoices/<%= invoice.id %>?from=admin" class="btn btn-sm btn-primary">
+                    <i class="bi bi-eye me-1"></i>View
+                  </a>
+                  <button class="btn btn-sm btn-info ms-1" 
+                          onclick="addNote('<%= invoice.id %>')">
+                    <i class="bi bi-pencil me-1"></i>Note
+                  </button>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Invoice Modal -->
+<div class="modal fade" id="createInvoiceModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Create New Invoice</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="createInvoiceForm">
+          <div class="mb-3">
+            <label class="form-label">Customer</label>
+            <select class="form-select" name="userId" required>
+              <option value="">Select customer...</option>
+              <!-- Add users dynamically -->
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Month</label>
+            <input type="month" class="form-control" name="period" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="createInvoice()">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Note Modal -->
+<div class="modal fade" id="noteModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Note</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="noteForm">
+          <div class="mb-3">
+            <label class="form-label">Note</label>
+            <textarea class="form-control" name="note" rows="3" required></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="saveNote()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentInvoiceId = null;
+
+// Handle status change
+document.querySelectorAll('.status-select').forEach(select => {
+  select.addEventListener('change', async function() {
+    const invoiceId = this.dataset.invoiceId;
+    const status = this.value;
+    
+    try {
+      const response = await fetch(`/invoices/admin/${invoiceId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update status');
+      }
+      
+      location.reload();
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to update status');
+    }
+  });
+});
+
+// Filter invoices by period
+function filterByPeriod(period) {
+  const rows = document.querySelectorAll('#invoiceTableBody tr');
+  rows.forEach(row => {
+    if (row.dataset.period === period) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+}
+
+// Apply default filter on page load
+document.addEventListener('DOMContentLoaded', () => {
+  const defaultPeriod = document.getElementById('periodFilter').value;
+  filterByPeriod(defaultPeriod);
+});
+
+// Create invoice
+async function createInvoice() {
+  const form = document.getElementById('createInvoiceForm');
+  const formData = new FormData(form);
+  const period = new Date(formData.get('period'));
+  
+  if (!formData.get('userId')) {
+    alert('Please select a customer');
+    return;
+  }
+  
+  if (!formData.get('period')) {
+    alert('Please select a month');
+    return;
+  }
+  
+  try {
+    const response = await fetch('/invoices/admin/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        userId: formData.get('userId'),
+        month: period.getMonth() + 1,
+        year: period.getFullYear()
+      })
+    });
+    
+    const result = await response.json();
+    if (result.success) {
+      const modal = bootstrap.Modal.getInstance(document.getElementById('createInvoiceModal'));
+      modal.hide();
+      location.reload();
+    } else {
+      alert(result.error || 'Failed to create invoice');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Failed to create invoice');
+  }
+}
+
+// Add note
+function addNote(invoiceId) {
+  currentInvoiceId = invoiceId;
+  new bootstrap.Modal(document.getElementById('noteModal')).show();
+}
+
+async function saveNote() {
+  const form = document.getElementById('noteForm');
+  const formData = new FormData(form);
+  
+  try {
+    const response = await fetch(`/invoices/admin/${currentInvoiceId}/note`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        note: formData.get('note')
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to add note');
+    }
+    
+    location.reload();
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Failed to add note');
+  }
+}
+
+// Load users for create invoice form
+async function loadUsers() {
+  try {
+    const response = await fetch('/users/list');
+    const users = await response.json();
+    
+    const select = document.querySelector('select[name="userId"]');
+    users.forEach(user => {
+      const option = document.createElement('option');
+      option.value = user.id;
+      option.textContent = user.name;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Error loading users:', error);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadUsers);
+</script>
+
+<%- include('../../layouts/footer') %> 

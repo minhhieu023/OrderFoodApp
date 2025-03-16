@@ -29,10 +29,24 @@ exports.getCustomerReport = async (req, res) => {
       selectedCustomer,
       startDate,
       endDate,
-      report
+      report,
+      scripts: ['/js/customer-report.js']
     });
   } catch (error) {
     console.error('Error getting customer report:', error);
+    res.status(500).send('Server error');
+  }
+};
+
+exports.getDailyReport = async (req, res) => {
+  try {
+    const orders = await Order.getDailyReport();
+    res.render('orders/report', { 
+      orders,
+      scripts: ['/js/report.js']
+    });
+  } catch (error) {
+    console.error('Error getting daily report:', error);
     res.status(500).send('Server error');
   }
 }; 
