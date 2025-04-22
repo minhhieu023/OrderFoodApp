@@ -136,7 +136,10 @@ async function deleteOrder() {
 // Update order function
 async function updateOrder() {
   if (editOrder.items.length === 0) {
-    alert('Please add at least one item');
+    // If no items, delete the order
+    if (confirm('No items in order. Would you like to delete this order?')) {
+      await deleteOrder();
+    }
     return;
   }
 
@@ -216,4 +219,4 @@ function formatCurrency(amount) {
 
 <script src="/js/edit-order.js"></script>
 </body>
-</html> 
+</html>

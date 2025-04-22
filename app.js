@@ -39,11 +39,13 @@ app.locals.formatCurrency = (amount) => {
 // Trust proxy (needed when behind Nginx)
 app.set('trust proxy', 'loopback');
 
-// Auth middleware
+// Auth routes (must be before auth middleware)
+app.use('/', authRoutes);
+
+// Auth middleware for protected routes
 app.use(authMiddleware);
 
-// Routes
-app.use('/', authRoutes);
+// Protected routes
 app.use('/menu', adminMiddleware, menuRoutes);
 app.use('/orders', orderRoutes);
 app.use('/reports', reportRoutes);

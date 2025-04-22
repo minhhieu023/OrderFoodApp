@@ -143,6 +143,12 @@ class Order {
   }
 
   static async updateOrder(orderId, items, total) {
+    // If no items, delete the order
+    if (!items || items.length === 0) {
+      await this.deleteOrder(orderId);
+      return;
+    }
+
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
@@ -204,4 +210,4 @@ class Order {
   }
 }
 
-module.exports = Order; 
+module.exports = Order;

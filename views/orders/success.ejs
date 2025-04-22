@@ -26,64 +26,50 @@
                   <i class="bi bi-person-circle fs-1 text-muted"></i>
                 </div>
                 <div class="flex-grow-1">
-                  <h5 class="mb-1"><%= order.customerName %></h5>
+                  <h5 class="mb-1"><%= user.name %></h5>
                   <div class="text-muted">
                     <i class="bi bi-clock me-1"></i><%= order.formattedDate %>
                   </div>
                 </div>
-                <div class="text-end">
-                  <h4 class="text-primary mb-0"><%= formatCurrency(order.total) %></h4>
-                </div>
               </div>
 
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th class="text-center">Quantity</th>
-                    <th class="text-end">Price</th>
-                    <th class="text-end">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% order.items.forEach(item => { %>
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
                     <tr>
-                      <td class="align-middle">
-                        <div><%= item.name %></div>
-                        <% if (item.note) { %>
-                          <small class="text-muted">
-                            <i class="bi bi-pencil-square me-1"></i><%= item.note %>
-                          </small>
-                        <% } %>
-                      </td>
-                      <td class="text-center align-middle">
-                        <span class="badge bg-secondary rounded-pill px-3"><%= item.quantity %></span>
-                      </td>
-                      <td class="text-end align-middle"><%= formatCurrency(item.price) %></td>
-                      <td class="text-end align-middle"><%= formatCurrency(item.price * item.quantity) %></td>
+                      <th>Item</th>
+                      <th class="text-center">Quantity</th>
+                      <th class="text-end">Price</th>
                     </tr>
-                  <% }); %>
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colspan="3" class="text-end fw-bold">Total:</td>
-                    <td class="text-end fw-bold"><%= formatCurrency(order.total) %></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
+                  </thead>
+                  <tbody>
+                    <% order.items.forEach(function(item) { %>
+                      <tr>
+                        <td>
+                          <%= item.itemName %>
+                          <% if (item.note) { %>
+                            <br><small class="text-muted"><%= item.note %></small>
+                          <% } %>
+                        </td>
+                        <td class="text-center"><%= item.quantity %></td>
+                        <td class="text-end"><%= new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.itemPrice) %></td>
+                      </tr>
+                    <% }); %>
+                    <tr class="table-light">
+                      <td colspan="2" class="text-end fw-bold">Total:</td>
+                      <td class="text-end fw-bold"><%= new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.total) %></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
-          <div class="mt-4">
-            <a href="/orders" class="btn btn-primary btn-lg me-2">
-              <i class="bi bi-plus-lg me-2"></i>New Order
-            </a>
-            <a href="/orders/report" class="btn btn-outline-primary btn-lg">
-              <i class="bi bi-list-ul me-2"></i>View All Orders
-            </a>
+              <div class="text-center mt-4">
+                <a href="/orders" class="btn btn-primary">Back to Orders</a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-</div> 
+</div>

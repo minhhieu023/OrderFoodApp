@@ -7,6 +7,7 @@ const { adminMiddleware } = require('../middleware/auth');
 router.use(adminMiddleware);
 
 router.get('/', userController.getAllUsers);
+router.post('/', userController.addUser);  
 router.put('/:id', userController.updateUser);
 router.post('/:id/reset-password', userController.resetPassword);
 router.delete('/:id', userController.deleteUser);
@@ -16,4 +17,4 @@ router.post('/settings/notification-content', userController.setNotificationCont
 router.get('/settings/notification-content', userController.getNotificationContent);
 router.get('/list', userController.getUsersList);
 
-module.exports = router; 
+module.exports = router;

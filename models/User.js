@@ -2,6 +2,7 @@ const pool = require('../config/database');
 const bcrypt = require('bcryptjs');
 
 class User {
+  // Retrieve methods
   static async getAll() {
     const [rows] = await pool.query(`
       SELECT id, name, email, role, created_at, updated_at 
@@ -20,6 +21,38 @@ class User {
     return rows[0] || null;
   }
 
+  static async findByEmail(email) {
+    const [rows] = await pool.query(`
+      SELECT id, name, email, role, created_at, updated_at
+      FROM users 
+      WHERE email = ?
+    `, [email]);
+    return rows[0] || null;
+  }
+
+  // Authentication methods
+  static async authenticate(email, password) {
+    const [rows] = await pool.query(
+      'SELECT * FROM users WHERE email = ?',
+      [email]
+    );
+    const user = rows[0];
+    
+    if (!user) {
+      return null;
+    }
+
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+      return null;
+    }
+
+    // Don't send password back
+    delete user.password;
+    return user;
+  }
+
+  // Create and update methods
   static async create(name, email, password, role = 'user') {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -46,56 +79,20 @@ class User {
     );
   }
 
+  // Delete method
   static async delete(id) {
     // Kiểm tra xem user có orders không
     const [orders] = await pool.query(
-      'SELECT COUNT(*) as orderCount FROM orders WHERE user_id = ?', 
+      'SELECT COUNT(*) as count FROM orders WHERE user_id = ?',
       [id]
     );
     
-    if (orders[0].orderCount > 0) {
+    if (orders[0].count > 0) {
       throw new Error('Cannot delete user with existing orders');
     }
     
     await pool.query('DELETE FROM users WHERE id = ?', [id]);
   }
-
-  static async authenticate(email, password) {
-    const [users] = await pool.query(
-      'SELECT id, name, email, password, role FROM users WHERE email = ?',
-      [email]
-    );
-    
-    if (users.length === 0) {
-      return null;
-    }
-    
-    const user = users[0];
-    const match = await bcrypt.compare(password, user.password);
-    
-    if (!match) {
-      return null;
-    }
-    
-    // Remove password from result
-    delete user.password;
-    return user;
-  }
-
-  static async updateProfile(id, name, password = null) {
-    if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      await pool.query(
-        'UPDATE users SET name = ?, password = ?, updated_at = NOW() WHERE id = ?',
-        [name, hashedPassword, id]
-      );
-    } else {
-      await pool.query(
-        'UPDATE users SET name = ?, updated_at = NOW() WHERE id = ?',
-        [name, id]
-      );
-    }
-  }
 }
 
-module.exports = User; 
+module.exports = User;

@@ -29,12 +29,14 @@ exports.addUser = async (req, res) => {
 
 exports.updateUser = async (req, res) => {
   try {
-    const { id, name, email, role } = req.body;
-    if (!id || !name || !email || !role) {
+    const userId = req.params.id;
+    const { name, email, role } = req.body;
+    
+    if (!name || !email || !role) {
       return res.status(400).send('Missing required fields');
     }
     
-    await User.update(id, name, email, role);
+    await User.update(userId, name, email, role);
     res.redirect('/users');
   } catch (error) {
     console.error('Error updating user:', error);

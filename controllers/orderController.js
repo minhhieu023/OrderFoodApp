@@ -141,8 +141,26 @@ exports.getOrderSuccess = async (req, res) => {
     if (!order) {
       return res.status(404).send('Order not found');
     }
-    
-    res.render('orders/success', { order });
+
+    // Parse items from JSON string if needed
+    if (typeof order.items === 'string') {
+      order.items = JSON.parse(order.items);
+    }
+
+    // Format the date
+    const orderDate = new Date(order.created_at);
+    order.formattedDate = orderDate.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    res.render('orders/success', { 
+      order,
+      user: req.user
+    });
   } catch (error) {
     console.error('Error getting order success page:', error);
     res.status(500).send('Server error');
