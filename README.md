@@ -1,153 +1,127 @@
-# Food Ordering System
+# Food Ordering App
 
-Hệ thống đặt món ăn đơn giản được xây dựng bằng Node.js, Express và MySQL.
+A comprehensive food ordering system built with Node.js, Express, and MySQL, designed for managing daily food orders and monthly invoicing.
 
-## Tính năng
+## Features
 
-- 🍽️ **Quản lý Menu**
-  - Thêm, sửa, xóa món ăn
-  - Quản lý giá và mô tả
-  - Sắp xếp theo danh mục
+### 🔐 User Management
+- User registration and authentication
+- Role-based access control (Admin/User)
+- JWT-based session management
+- Profile management
 
-- 🛒 **Xử lý Đơn hàng**
-  - Tạo đơn hàng mới
-  - Thêm nhiều món với số lượng
-  - Thêm ghi chú cho từng món
-  - Sửa hoặc hủy đơn hàng
-  - Theo dõi đơn hàng
+### 🍽️ Menu Management (Admin)
+- Add, edit, and delete menu items
+- Set prices and descriptions
+- Real-time menu updates
+- Search and sort functionality
 
-- 📊 **Báo cáo**
-  - Báo cáo bán hàng theo ngày
-  - Lịch sử đặt hàng của khách
+### 🛒 Order Management
+- Create new orders
+- Add multiple items with quantities
+- Add notes for each item
+- Edit or cancel orders
+- Automatic empty order handling
+- Order status tracking
+- Real-time order updates
 
-## Công nghệ sử dụng
+### 📊 Reporting System
+- Daily order reports
+- Customer order history
+- Monthly sales analytics
+- Export functionality
 
-- **Backend**: Node.js + Express  
-- **Database**: MySQL  
-- **View Engine**: EJS  
-- **Frontend**: Bootstrap 5  
-- **Icons**: Bootstrap Icons  
+### 💰 Invoice Management
+- Automated monthly invoice generation
+- Invoice status tracking (New, Transferred, Confirmed, Cancelled)
+- QR code payment integration
+- Payment status tracking
+- Invoice notes and comments
 
-## Yêu cầu hệ thống
+### 🔔 Notifications
+- Configurable notification times
+- Customizable notification content
+- Order status notifications
+- Payment reminders
 
-- **Node.js** (v14 trở lên)  
-- **MySQL** (v5.7 trở lên)  
-- **npm** hoặc **yarn**  
+## Tech Stack
 
-## Cài đặt
+### Backend
+- **Runtime**: Node.js (v14+)
+- **Framework**: Express.js
+- **Database**: MySQL (v5.7+)
+- **Authentication**: JWT (jsonwebtoken)
+- **Password Hashing**: bcryptjs
 
-1. **Clone repository**
-   ```bash
-   git clone https://github.com/minhhieu023/OrderFoodApp.git
-   cd food-ordering-system
-   ```
-
-2. **Cài đặt dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Tạo file `.env` và cập nhật thông tin database**
-   ```env
-   NODE_ENV=development
-   PORT=3000
-   DB_HOST=localhost
-   DB_USER=your_db_user
-   DB_PASSWORD=your_db_password
-   DB_NAME=food_order
-   ```
-
-4. **Khởi tạo database**
-   ```bash
-   node config/init-db.js
-   ```
-
-5. **Chạy ứng dụng**
-   ```bash
-   npm start
-   ```
-   Ứng dụng sẽ chạy tại `http://localhost:3000`
-
-## Cấu trúc thư mục
-
-```
-food-ordering-system/
-├── config/         # File cấu hình
-│   ├── database.js # Kết nối database
-│   └── init-db.js  # Khởi tạo database
-├── controllers/    # Xử lý request
-├── models/         # Model database
-├── public/         # File tĩnh
-│   ├── css/        # Stylesheet
-│   └── js/         # JavaScript
-├── routes/         # Định tuyến
-├── views/          # Template EJS
-│   └── layouts/    # Layout chung
-└── app.js          # File khởi chạy
-```
-
-## Phát triển
-
-- **Chạy môi trường development với hot reload**:
-  ```bash
-  npm start
-  ```
-
-- **Chạy môi trường production**:
-  ```bash
-  npm run prod
-  ```
-
-## Running the Application
+### Frontend
+- **Template Engine**: EJS
+- **UI Framework**: Bootstrap 5
+- **Icons**: Bootstrap Icons
+- **JavaScript**: Vanilla JS with Fetch API
+- **Currency**: Vietnamese Dong (VND)
 
 ### Development
-```bash
-npm start
+- **Package Manager**: npm/yarn
+- **Environment**: dotenv
+- **Database Migration**: Custom migration system
+- **Date Handling**: Native JavaScript Date
+- **Code Organization**: MVC architecture
+
+## Project Structure
+```
+OrderFoodApp/
+├── config/         # Database and app configuration
+├── controllers/    # Route controllers
+├── middleware/     # Auth and validation middleware
+├── models/         # Database models
+├── public/         # Static assets
+├── routes/         # Route definitions
+├── utils/         # Helper functions
+└── views/         # EJS templates
 ```
 
-### Production
-```bash
-# Using Node directly
-npm run prod
+## Setup Requirements
+- Node.js (v14 or higher)
+- MySQL (v5.7 or higher)
+- npm or yarn package manager
 
-# Using PM2
-pm2 start ecosystem.config.js --env production
+## Environment Variables
 ```
-
-### Environment Variables
-Create `.env.production` file with the following variables:
-```
-PORT=3000
-NODE_ENV=production
 DB_HOST=localhost
-DB_USER=production_user
-DB_PASSWORD=your_prod_password
-DB_NAME=order_food_prod
-JWT_SECRET=your_production_jwt_secret
-JWT_EXPIRES_IN=7d
-TZ=Asia/Ho_Chi_Minh
+DB_USER=your_username
+DB_PASS=your_password
+DB_NAME=your_database
+JWT_SECRET=your_jwt_secret
+PORT=3000
 ```
 
-## API Endpoints
+## Installation
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up environment variables in `.env`
+4. Initialize database: `npm run init-db`
+5. Run migrations: `npm run migrate`
+6. Start the server: `npm start`
 
-### Orders
+## Development
+- Start dev server: `npm run dev`
+- Run tests: `npm test`
+- Lint code: `npm run lint`
 
-- `GET /orders` - Trang đặt hàng  
-- `POST /orders` - Tạo đơn hàng mới  
-- `GET /orders/report` - Báo cáo theo ngày  
-- `GET /orders/detail/:id` - Chi tiết đơn hàng  
-- `GET /orders/edit/:id` - Sửa đơn hàng  
-- `PUT /orders/:id` - Cập nhật đơn hàng  
-- `DELETE /orders/:id` - Xóa đơn hàng  
+## Security Features
+- JWT-based authentication
+- Password hashing with bcrypt
+- XSS protection
+- CSRF protection
+- Input validation
+- Secure session handling
 
-### Menu
-
-- `GET /menu` - Quản lý menu  
-- `POST /menu` - Thêm món ăn  
-- `PUT /menu/:id` - Cập nhật món ăn  
-- `DELETE /menu/:id` - Xóa món ăn  
+## Contributing
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a pull request
 
 ## License
-
-[MIT License](LICENSE)
-```
+MIT License
